@@ -1,0 +1,61 @@
+pipeline{
+    agent  any
+    tools {
+        nodejs "NodeJS_16"
+    }
+     parameters {
+        string(name: 'BRANCH_NAME', defaultValue: 'main', description: 'Branch to build from')
+        string(name: 'DOCKER_TAG_SUFFIX', defaultValue: '', description: 'Optional tag suffix (e.g., -staging, -prod)')
+    }
+       environment {
+        DOCKER_IMAGE_BASE = "arnold21/youtube-clone-mern"
+        BRANCH_SANITIZED = "${params.BRANCH_NAME.replace('/', '-').replace('_', '-')}"
+        DOCKER_TAG = "${BRANCH_SANITIZED}-${env.BUILD_NUMBER}${params.DOCKER_TAG_SUFFIX}"
+    }
+    stages{
+        stage('checkout'){
+            steps{
+                 checkout([$class: 'GitSCM', 
+                  branches: [[name: "${params.BRANCH_NAME}"]],
+                    userRemoteConfigs: [[url: 'https://github.com/Abhaytomar2004/CI-CD-Youtube-Clone.git']]
+                    ])
+            }
+        }
+        stage('Build'){
+            steps{
+                 bat 'npm install'  
+                bat 'npm run build'
+            }
+        }
+          stage('Docker Build') {
+            steps {
+                dir(env.PROJECT_DIR) {
+                    bat "docker build -t ${DOCKER_IMAGE_BASE}:${DOCKER_TAG} ."
+                    bat "docker tag ${DOCKER_IMAGE_BASE}:${DOCKER_TAG} ${DOCKER_IMAGE_BASE}:${BRANCH_SANITIZED}-latest"
+                }
+            }
+        }
+          stage('Archive Artifacts') {
+            steps {
+                dir(env.PROJECT_DIR) {
+                    archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
+                    archiveArtifacts artifacts: 'Dockerfile', fingerprint: true
+                }
+            }
+        }
+    }
+     post {
+        success {
+            echo "Build completed successfully for branch: ${params.BRANCH_NAME}"
+            script {
+                currentBuild.description = "Branch: ${params.BRANCH_NAME} - Build #${env.BUILD_NUMBER}"
+            }
+        }
+        failure {
+            echo "Build failed for branch: ${params.BRANCH_NAME}"
+        }
+        always {
+            cleanWs()
+        }
+    }
+}
