@@ -11,6 +11,7 @@ pipeline{
         DOCKER_IMAGE_BASE = "arnold21/youtube-clone-mern"
         BRANCH_SANITIZED = "${params.BRANCH_NAME.replace('/', '-').replace('_', '-')}"
         DOCKER_TAG = "${BRANCH_SANITIZED}-${env.BUILD_NUMBER}${params.DOCKER_TAG_SUFFIX}"
+        PROJECT_DIR = 'backend'
     }
     stages{
         stage('checkout'){
