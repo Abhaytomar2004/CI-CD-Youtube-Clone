@@ -15,4 +15,4 @@ services:
   frontend:
     image: shubhobera09/youtube-frontend
     ports:
-      - "4000:4000"
+      - "4001:4000"
