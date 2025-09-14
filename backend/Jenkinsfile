@@ -22,12 +22,15 @@ pipeline{
                     ])
             }
         }
-        stage('Build'){
-            steps{
-                 bat 'npm install'  
-                bat 'npm run build'
-            }
-        }
+       stage('Build') {
+  steps {
+    dir('backend') {
+      bat 'npm install'
+      bat 'npm run build'
+    }
+  }
+}
+
           stage('Docker Build') {
             steps {
                 dir(env.PROJECT_DIR) {
