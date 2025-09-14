@@ -1,16 +1,13 @@
 pipeline {
   agent any
-
   parameters {
     string(name: 'BRANCH_NAME', defaultValue: 'dev', description: 'Branch to build')
     string(name: 'DOCKER_TAG_SUFFIX', defaultValue: '', description: 'Optional Docker tag suffix')
   }
-
   environment {
     BRANCH_SANITIZED = "${params.BRANCH_NAME.replace('/', '-').replace('_', '-')}"
     DOCKER_IMAGE_TAG = "${BRANCH_SANITIZED}-${env.BUILD_NUMBER}${params.DOCKER_TAG_SUFFIX}"
   }
-
   stages {
     stage('Checkout') {
       steps {
@@ -32,18 +29,6 @@ pipeline {
         }
       }
     }
-    stage('Build Backend') {
-      steps {
-        dir('backend') {
-          script {
-            def pkg = readJSON file: 'package.json'
-            if(pkg.scripts?.build) {
-              bat 'npm run build'
-            }
-          }
-        }
-      }
-    }
     stage('Build Frontend') {
       steps {
         dir('frontend') {
@@ -53,17 +38,13 @@ pipeline {
     }
     stage('Docker Compose Build & Up') {
       steps {
-        dir('') {
-          bat 'docker-compose build'
-          bat 'docker-compose up -d'
-        }
+        bat 'docker-compose build'
+        bat 'docker-compose up -d'
       }
     }
     stage('Docker Compose Down') {
       steps {
-        dir('') {
-          bat 'docker-compose down'
-        }
+        bat 'docker-compose down'
       }
     }
   }
