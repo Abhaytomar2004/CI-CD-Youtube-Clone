@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+    parameters {
+        string(name: 'PR_BRANCH', defaultValue: '', description: 'Name of the pull request branch to merge')
+        string(name: 'TARGET_BRANCH', defaultValue: 'main', description: 'Branch to merge into')
+    }
+    stages {
+        stage('Checkout target branch') {
+            steps {
+                checkout([$class: 'GitSCM',
+                    branches: [[name: "refs/heads/${params.TARGET_BRANCH}"]],
+                    userRemoteConfigs: [[url: 'https://github.com/Abhaytomar2004/CI-CD-Youtube-Clone.git']]
+                ])
+            }
+        }
+        stage('Merge PR branch') {
+            steps {
+                script {
+                    bat "git fetch origin ${params.PR_BRANCH}"
+                    bat "git merge origin/${params.PR_BRANCH} --no-ff -m 'Merge PR branch ${params.PR_BRANCH} into ${params.TARGET_BRANCH}'"
+                }
+            }
+        }
+        stage('Push changes') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
+                    bat '''
+                    git remote set-url origin https://${GIT_USER}:${GIT_PASS}@github.com/Abhaytomar2004/CI-CD-Youtube-Clone.git
+                    git push origin ${TARGET_BRANCH}
+                    '''    
+                }
+            }
+        }
+    }
+    post {
+        success {
+            echo "Successfully merged ${params.PR_BRANCH} into ${params.TARGET_BRANCH}"
+        }
+        failure {
+            echo "Failed to merge. Please check the logs."
+        }
+    }
+}
