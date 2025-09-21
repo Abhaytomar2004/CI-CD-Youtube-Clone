@@ -16,28 +16,37 @@ pipeline {
         stage('Merge PR branch') {
             steps {
                 script {
-                    bat "git fetch origin ${params.PR_BRANCH}"
-                    bat "git merge origin/${params.PR_BRANCH} --no-ff -m 'Merge PR branch ${params.PR_BRANCH} into ${params.TARGET_BRANCH}'"
+                    sh "git fetch origin ${params.PR_BRANCH}"
+                    sh "git merge origin/${params.PR_BRANCH} --no-ff -m 'Merge PR branch ${params.PR_BRANCH} into ${params.TARGET_BRANCH}'"
                 }
             }
         }
         stage('Push changes') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'github-creds', usernameVariable: 'GIT_USER', passwordVariable: 'GIT_PASS')]) {
-                    bat '''
+                    sh '''
                     git remote set-url origin https://${GIT_USER}:${GIT_PASS}@github.com/Abhaytomar2004/CI-CD-Youtube-Clone.git
                     git push origin ${TARGET_BRANCH}
                     '''    
                 }
             }
         }
+        stage('Publish') {
+            steps {
+                echo "Starting publish job after successful merge"
+                // Apna publish/deploy commands yaha likho
+                sh 'npm install'
+                sh 'npm run build'
+                // Example: sh './deploy.sh'
+            }
+        }
     }
     post {
         success {
-            echo "Successfully merged ${params.PR_BRANCH} into ${params.TARGET_BRANCH}"
+            echo "Successfully merged ${params.PR_BRANCH} into ${params.TARGET_BRANCH} and published."
         }
         failure {
-            echo "Failed to merge. Please check the logs."
+            echo "Merge or publish failed. Please check the logs."
         }
     }
 }
